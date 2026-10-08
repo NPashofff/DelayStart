@@ -1,0 +1,6 @@
+<Project>
+  <!-- Единственото място за версията: ползват я и програмата, и инсталаторът. -->
+  <PropertyGroup>
+    <Version>0.1.0</Version>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,7 @@
+<WixLocalization Culture="bg-BG" Codepage="1251" xmlns="http://wixtoolset.org/schemas/v4/wxl">
+  <String Id="PackageLanguage" Value="1026" />
+  <String Id="DowngradeError" Value="Вече е инсталирана по-нова версия на DelayStart." />
+  <String Id="DotNetMissing" Value="DelayStart изисква .NET 10 Desktop Runtime (x64). Инсталирай го от https://dotnet.microsoft.com/download/dotnet/10.0 и пусни този инсталатор отново." />
+  <String Id="ShortcutDescription" Value="Стартира програми след влизане в Windows с изчакване – като администратор или като обикновен потребител." />
+  <String Id="LaunchApp" Value="Отвори DelayStart" />
+</WixLocalization>

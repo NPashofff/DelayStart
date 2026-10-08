@@ -1,0 +1,35 @@
+<!--
+  MSI инсталатор (WiX 5 – последната версия с лиценз MS-RL, без Open Source Maintenance Fee).
+  Строи се с:  dotnet build installer -c Release
+  Резултат:    installer\bin\x64\Release\en-US\DelayStart-<версия>.msi и ...\bg-BG\DelayStart-<версия>.msi
+-->
+<Project Sdk="WixToolset.Sdk/5.0.2">
+
+  <PropertyGroup>
+    <OutputName>DelayStart-$(Version)</OutputName>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <!-- По един MSI за всеки език. -->
+    <Cultures>en-US;bg-BG</Cultures>
+    <!--
+      ICE43/ICE57 искат пряк път в Start менюто да има HKCU ключ. Това важи за инсталации за един потребител;
+      тук инсталацията е за целия компютър и прекият път отива в общото Start меню.
+    -->
+    <SuppressIces>ICE43;ICE57</SuppressIces>
+
+    <AppProject>$(MSBuildThisFileDirectory)..\src\DelayStart\DelayStart.csproj</AppProject>
+    <AppPublishDir>$(MSBuildThisFileDirectory)obj\app\$(Configuration)\</AppPublishDir>
+    <DefineConstants>Version=$(Version);AppPublishDir=$(AppPublishDir)</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WixToolset.UI.wixext" Version="5.0.2" />
+    <PackageReference Include="WixToolset.Util.wixext" Version="5.0.2" />
+    <PackageReference Include="WixToolset.Netfx.wixext" Version="5.0.2" />
+  </ItemGroup>
+
+  <!-- Преди всяко строене публикува програмата като един DelayStart.exe. -->
+  <Target Name="PublishApp" BeforeTargets="BeforeBuild">
+    <Exec Command="dotnet publish &quot;$(AppProject)&quot; -c $(Configuration) -o &quot;$(AppPublishDir).&quot; --nologo" />
+  </Target>
+
+</Project>

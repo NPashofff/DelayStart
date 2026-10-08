@@ -1,0 +1,87 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui"
+     xmlns:netfx="http://wixtoolset.org/schemas/v4/wxs/netfx">
+
+  <Package Name="DelayStart"
+           Manufacturer="DelayStart"
+           Version="$(var.Version)"
+           Language="!(loc.PackageLanguage)"
+           UpgradeCode="CB75350E-0168-42CC-BE20-ACFC5CCA4A82"
+           Scope="perMachine">
+
+    <MajorUpgrade DowngradeErrorMessage="!(loc.DowngradeError)" />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Icon Id="AppIcon" SourceFile="..\src\DelayStart\Assets\DelayStart.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+
+    <!-- DelayStart.exe е framework-dependent: нужен е .NET 10 Desktop Runtime (x64). -->
+    <netfx:DotNetCompatibilityCheck Property="DOTNETDESKTOPCHECK" RuntimeType="desktop" Platform="x64"
+                                    Version="10.0.0" RollForward="minor" />
+    <Launch Condition="Installed OR DOTNETDESKTOPCHECK = &quot;0&quot;" Message="!(loc.DotNetMissing)" />
+
+    <!--
+      Само в Program Files и без избор на папка: там пишат само администратори, иначе
+      програма без админ права би могла да подмени DelayStart.exe и да получи админ права.
+    -->
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="DelayStart" />
+    </StandardDirectory>
+
+    <Feature Id="Main">
+      <Component Directory="INSTALLFOLDER">
+        <File Id="DelayStartExe" Source="$(var.AppPublishDir)DelayStart.exe" KeyPath="yes">
+          <Shortcut Id="StartMenuShortcut" Directory="ProgramMenuFolder" Name="DelayStart"
+                    Description="!(loc.ShortcutDescription)" WorkingDirectory="INSTALLFOLDER"
+                    Advertise="no" />
+        </File>
+      </Component>
+    </Feature>
+
+    <!--
+      При деинсталиране (но не и при обновяване): спира DelayStart, ако работи,
+      маха задачата от Task Scheduler и изтрива настройките от регистъра.
+    -->
+    <SetProperty Id="StopDelayStart" Sequence="execute" Before="StopDelayStart"
+                 Value="&quot;[System64Folder]taskkill.exe&quot; /F /IM DelayStart.exe" />
+    <CustomAction Id="StopDelayStart" BinaryRef="Wix4UtilCA_X64" DllEntry="WixQuietExec"
+                  Execute="deferred" Impersonate="no" Return="ignore" />
+
+    <SetProperty Id="DeleteAutostartTask" Sequence="execute" Before="DeleteAutostartTask"
+                 Value="&quot;[System64Folder]schtasks.exe&quot; /Delete /TN DelayStart /F" />
+    <CustomAction Id="DeleteAutostartTask" BinaryRef="Wix4UtilCA_X64" DllEntry="WixQuietExec"
+                  Execute="deferred" Impersonate="no" Return="ignore" />
+
+    <SetProperty Id="DeleteSettings" Sequence="execute" Before="DeleteSettings"
+                 Value="&quot;[System64Folder]reg.exe&quot; delete HKLM\SOFTWARE\DelayStart /f" />
+    <CustomAction Id="DeleteSettings" BinaryRef="Wix4UtilCA_X64" DllEntry="WixQuietExec"
+                  Execute="deferred" Impersonate="no" Return="ignore" />
+
+    <InstallExecuteSequence>
+      <!-- Спира се и при обновяване, за да може старият exe да бъде заменен. -->
+      <Custom Action="StopDelayStart" Before="RemoveFiles" Condition="REMOVE=&quot;ALL&quot;" />
+      <Custom Action="DeleteAutostartTask" After="StopDelayStart"
+              Condition="REMOVE=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
+      <Custom Action="DeleteSettings" After="DeleteAutostartTask"
+              Condition="REMOVE=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
+    </InstallExecuteSequence>
+
+    <!-- Интерфейс: Добре дошли → Инсталирай → Готово (без лиценз и без избор на папка). -->
+    <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+    <UI>
+      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg"
+               Order="99" Condition="NOT Installed" />
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg"
+               Order="99" Condition="NOT Installed" />
+      <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="LaunchDelayStart"
+               Condition="WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 AND NOT Installed" />
+    </UI>
+
+    <!-- Отметка „Отвори DelayStart“ в последния прозорец. Пуска се през ShellExecute, затова Windows ще поиска UAC. -->
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="!(loc.LaunchApp)" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
+    <Property Id="WixShellExecTarget" Value="[#DelayStartExe]" />
+    <CustomAction Id="LaunchDelayStart" BinaryRef="Wix4UtilCA_X64" DllEntry="WixShellExec" Impersonate="yes" />
+
+  </Package>
+</Wix>

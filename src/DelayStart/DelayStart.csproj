@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <!-- WinForms е нужен само за NotifyIcon (иконката в tray-а). -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\DelayStart.ico</ApplicationIcon>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <!-- DPI режимът е в app.manifest заради WPF; предупреждението на WinForms за него не се отнася за нас. -->
+    <NoWarn>$(NoWarn);WFO0003</NoWarn>
+  </PropertyGroup>
+
+  <!--
+    Публикува се като един .exe, който ползва вече инсталирания .NET runtime.
+    Не е self-contained нарочно: така нищо не се разархивира в %TEMP%, което е важно за процес с админ права.
+  -->
+  <PropertyGroup>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>false</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Махаме глобалните using-и на WinForms, за да не се бият с WPF (Application, MessageBox и т.н.). -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+    <Using Include="System.IO" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- За иконката в tray-а: от .ico файла се избира кадърът с точния размер за текущия DPI. -->
+    <EmbeddedResource Include="Assets\DelayStart.ico" LogicalName="DelayStart.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="TaskScheduler" Version="2.12.2" />
+  </ItemGroup>
+
+</Project>
